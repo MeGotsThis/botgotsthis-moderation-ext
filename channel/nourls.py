@@ -52,6 +52,10 @@ async def filterNoUrl(args: ChatCommandArgs) -> bool:
 @not_permission('moderator')
 @permission('chatModerator')
 async def filterAnnoyingUrl(args: ChatCommandArgs) -> bool:
+    badUrls: List[str] = [
+        'strawpoii.me',
+        'imageshd.net',
+    ]
     properties: List[str] = ['nourlAllowSubscriber', 'nourlSilent']
     modes: Mapping[str, bool] = await args.database.getChatProperties(
         args.chat.channel, properties, False, bool)
@@ -61,8 +65,11 @@ async def filterAnnoyingUrl(args: ChatCommandArgs) -> bool:
     if matches:
         for match in matches:
             bad = False
-            if 'strawpoii.me' in match.lower():
-                bad = True
+            badUrl: str
+            for badUrl in badUrls:
+                if 'strawpoii.me' in match.lower():
+                    bad = True
+                    break
             if bad:
                 reason: Optional[str]
                 if modes['nourlSilent']:
