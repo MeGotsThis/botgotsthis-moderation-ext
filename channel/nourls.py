@@ -67,7 +67,7 @@ async def filterAnnoyingUrl(args: ChatCommandArgs) -> bool:
             bad = False
             badUrl: str
             for badUrl in badUrls:
-                if 'strawpoii.me' in match.lower():
+                if badUrl in match.lower():
                     bad = True
                     break
             if bad:
