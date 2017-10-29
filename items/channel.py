@@ -13,6 +13,7 @@ def filterMessage() -> Iterable[ChatCommand]:
     yield noasciiart.filterAsciiArt
     yield noemotes.filterEmoteSpam
     yield nourls.filterNoUrl
+    yield nourls.filterAnnoyingUrl
 
 
 def commands() -> Mapping[str, Optional[ChatCommand]]:
