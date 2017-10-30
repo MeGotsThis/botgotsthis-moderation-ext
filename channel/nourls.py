@@ -54,6 +54,9 @@ async def filterNoUrl(args: ChatCommandArgs) -> bool:
 async def filterAnnoyingUrl(args: ChatCommandArgs) -> bool:
     badUrls: List[str] = [
         'strawpoii.me',
+    ]
+    botUrls: List[str] = [
+        'imgsmate.com',
         'imageshd.net',
     ]
     properties: List[str] = ['nourlAllowSubscriber', 'nourlSilent']
@@ -64,11 +67,17 @@ async def filterAnnoyingUrl(args: ChatCommandArgs) -> bool:
     matches: List[str] = re.findall(parser.twitchUrlRegex, str(args.message))
     if matches:
         for match in matches:
-            bad = False
+            bad: bool = False
+            level: int = 0
             badUrl: str
             for badUrl in badUrls:
                 if badUrl in match.lower():
                     bad = True
+                    break
+            for badUrl in botUrls:
+                if badUrl in match.lower():
+                    bad = True
+                    level = 1
                     break
             if bad:
                 reason: Optional[str]
@@ -77,7 +86,7 @@ async def filterAnnoyingUrl(args: ChatCommandArgs) -> bool:
                 else:
                     reason = 'No Annoying URLs are allowed'
                 await timeout.timeout_user(
-                    args.database, args.chat, args.nick, 'annoyurl', 0,
+                    args.database, args.chat, args.nick, 'annoyurl', level,
                     str(args.message), reason)
                 return True
     return False
