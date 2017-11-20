@@ -14,7 +14,7 @@ async def filterEmoteSpam(args: ChatCommandArgs) -> bool:
     properties = ['noemotesThreshold', 'noemotesSubscriberThreshold',
                   'noemotesSilent']
     thresholds: Dict[str, Optional[int]]
-    thresholds = await args.database.getChatProperties(
+    thresholds = await args.data.getChatProperties(
         args.chat.channel, properties, None, int)
     if thresholds['noemotesThreshold'] == 0:
         return False
@@ -37,7 +37,7 @@ async def filterEmoteSpam(args: ChatCommandArgs) -> bool:
             reason = None
         else:
             reason = 'Too many Emotes'
-        await timeout.timeout_user(args.database, args.chat, args.nick,
+        await timeout.timeout_user(args.data, args.chat, args.nick,
                                    'noemotes', 0, str(args.message), reason)
         if not args.permissions.owner:
             return True
@@ -55,7 +55,7 @@ async def commandSetEmoteSpamMode(args: ChatCommandArgs) -> bool:
         value = None
 
     if args.message.lower[1] == 'threshold':
-        await args.database.setChatProperty(
+        await args.data.setChatProperty(
             args.chat.channel, 'noemotesSubscriberThreshold',
             str(value) if value is not None else None)
         if value is None:
@@ -66,7 +66,7 @@ Set the emote spam threshold to the default (5 emotes)''')
         else:
             args.chat.send('Set the emote spam threshold to unlimited emotes')
     if args.message.lower[1] == 'subscribers':
-        await args.database.setChatProperty(
+        await args.data.setChatProperty(
             args.chat.channel, 'noemotesSubscriberThreshold',
             str(value) if value is not None else None)
         if value is None:
@@ -92,7 +92,7 @@ Unrecognized second parameter: {args.message[2]}''')
                 value = True
             if response == parser.No:
                 value = False
-        await args.database.setChatProperty(
+        await args.data.setChatProperty(
             args.chat.channel, 'noemotesSilent',
             str(value) if value is not None else None)
         if value is None:

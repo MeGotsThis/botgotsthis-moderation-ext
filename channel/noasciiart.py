@@ -20,17 +20,17 @@ async def filterAsciiArt(args: ChatCommandArgs) -> bool:
 
     countNoAlphaNum: int = sum(len(s) for s
                                in re.findall(r'[^\w\s]+', str(args.message)))
-    threshold: float = await args.database.getChatProperty(
+    threshold: float = await args.data.getChatProperty(
         args.chat.channel, 'asciiArtThreshold', defaultThreshold, float)
     if countNoAlphaNum / len(args.message) >= threshold / 100.0:
         reason: Optional[str]
-        if await args.database.getChatProperty(
+        if await args.data.getChatProperty(
                 args.chat.channel, 'noasciiartSilent', False, int):
             reason = None
         else:
             reason = 'ASCII Art is banned'
         await timeout.timeout_user(
-            args.database, args.chat, args.nick, 'noasciiart', 0,
+            args.data, args.chat, args.nick, 'noasciiart', 0,
             str(args.message), reason)
         if not args.permissions.owner:
             return True
@@ -44,8 +44,8 @@ async def commandSetAsciiThreshold(args: ChatCommandArgs) -> bool:
     with suppress(ValueError):
         if len(args.message) >= 2:
             threshold = float(args.message[1])
-    await args.database.setChatProperty(args.chat.channel, 'asciiArtThreshold',
-                                        str(threshold))
+    await args.data.setChatProperty(args.chat.channel, 'asciiArtThreshold',
+                                    str(threshold))
     if threshold is None:
         args.chat.send(f'''\
 Set the ASCII Art Threshold to the default {defaultThreshold}%''')
@@ -70,7 +70,7 @@ async def commandSetAsciiArtSilent(args: ChatCommandArgs) -> bool:
         if response == parser.No:
             value = False
 
-    await args.database.setChatProperty(
+    await args.data.setChatProperty(
         args.chat.channel, 'noasciiartSilent', utils.property_bool(value))
     if value is None:
         args.chat.send('''\
