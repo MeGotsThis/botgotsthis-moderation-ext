@@ -1,10 +1,14 @@
-﻿import re
+﻿import asyncio
+import re
+from datetime import datetime
 from typing import Any, List, Mapping, Optional, Set, Tuple  # noqa: F401
 
 import aioodbc.cursor  # noqa: F401
 
-from bot import utils
+from bot import data, utils  # noqa: F401
+from lib import cache
 from lib.data import ChatCommandArgs
+from lib.data.message import Message
 from lib.database import DatabaseMain
 from lib.helper import parser, timeout
 from lib.helper.chat import feature, min_args, not_permission, permission
@@ -196,3 +200,26 @@ might not be there''')
 ''')
         return True
     return False
+
+
+@permission('bannable')
+async def filterAnyUrlWithNoFollows(args: ChatCommandArgs) -> bool:
+    if re.search(parser.twitchUrlRegex, str(args.message)):
+        asyncio.ensure_future(
+            log_url_if_no_follow(
+                args.chat, args.nick, args.message, args.timestamp))
+    return False
+
+
+async def log_url_if_no_follow(chat: 'data.Channel',
+                               nick: str,
+                               message: Message,
+                               timestamp: datetime) -> None:
+    dataCache: cache.CacheStore
+    async with cache.get_cache() as dataCache:
+        if await dataCache.twitch_num_followers(nick):
+            return
+
+    # Record all urls with users of no follows
+    utils.print(f'{chat.ircChannel} {nick}: {message}',
+                file='no-follow-url.log', timestamp=timestamp)

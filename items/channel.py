@@ -9,6 +9,7 @@ from ..channel import nourls
 
 
 def filterMessage() -> Iterable[ChatCommand]:
+    yield nourls.filterAnyUrlWithNoFollows
     yield autobanword.filterAutoBanWord
     yield noasciiart.filterAsciiArt
     yield noemotes.filterEmoteSpam
