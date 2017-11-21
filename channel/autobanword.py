@@ -1,31 +1,30 @@
-﻿import aioodbc.cursor  # noqa: F401
+﻿from typing import List, Set  # noqa: F401
 
-from typing import List  # noqa: F401
+import aioodbc.cursor  # noqa: F401
 
 from lib.data import ChatCommandArgs
 from lib.database import DatabaseMain
 from lib.helper import timeout
 from lib.helper.chat import feature, min_args, permission
 from lib.helper.message import messagesFromItems
+from ..library import autobanword as library
 
 
 @feature('autobanword')
 @permission('bannable')
 @permission('chatModerator')
 async def filterAutoBanWord(args: ChatCommandArgs) -> bool:
-    db: DatabaseMain
-    cursor: aioodbc.cursor.Cursor
-    async with DatabaseMain.acquire() as db, await db.cursor() as cursor:
-        query: str = 'SELECT word FROM auto_ban_words WHERE broadcaster=?'
-        async for row in await cursor.execute(query, (args.chat.channel,)):
-            if row[0] in args.message.lower:
-                await timeout.timeout_user(
-                    args.data, args.chat, args.nick, 'autobanword', 0,
-                    str(args.message), 'One of the words you said is banned')
-                if args.permissions.owner:
-                    return False
-                else:
-                    return True
+    words: Set[str]
+    words = await library.get_auto_ban_words(args.chat.channel, args.data)
+    for word in words:
+        if word in args.message.lower:
+            await timeout.timeout_user(
+                args.data, args.chat, args.nick, 'autobanword', 0,
+                str(args.message), 'One of the words you said is banned')
+            if args.permissions.owner:
+                return False
+            else:
+                return True
     return False
 
 
@@ -60,6 +59,8 @@ INSERT INTO auto_ban_words (broadcaster, word) VALUES (?, ?)
 '''
                 await cursor.execute(query, (args.chat.channel, word))
                 await db.commit()
+                await library.reset_auto_ban_words(args.chat.channel,
+                                                   args.data)
                 args.chat.send(f'''\
 {word} has been added to the autoban word list''')
             except Exception:
@@ -75,6 +76,7 @@ there''')
             query = 'DELETE FROM auto_ban_words WHERE broadcaster=? AND word=?'
             await cursor.execute(query, (args.chat.channel, word))
             await db.commit()
+            await library.reset_auto_ban_words(args.chat.channel, args.data)
             if cursor.rowcount == 0:
                 args.chat.send(f'''\
 {word} could not been removed from the autoban word list, it might not be \
