@@ -1,5 +1,5 @@
 ﻿import re
-from typing import Any, List, Mapping, Optional, Tuple  # noqa: F401
+from typing import Any, List, Mapping, Optional, Set, Tuple  # noqa: F401
 
 import aioodbc.cursor  # noqa: F401
 
@@ -9,6 +9,7 @@ from lib.database import DatabaseMain
 from lib.helper import parser, timeout
 from lib.helper.chat import feature, min_args, not_permission, permission
 from lib.helper.message import messagesFromItems
+from ..library import nourls as library
 
 
 @feature('nolinks')
@@ -20,34 +21,30 @@ async def filterNoUrl(args: ChatCommandArgs) -> bool:
         args.chat.channel, properties, False, bool)
     if modes['nourlAllowSubscriber'] and args.permissions.subscriber:
         return False
-    db: DatabaseMain
-    cursor: aioodbc.cursor.Cursor
-    async with DatabaseMain.acquire() as db, await db.cursor() as cursor:
-        matches: List[str]
-        matches = re.findall(parser.twitchUrlRegex, str(args.message))
-        if matches:
-            query = 'SELECT urlMatch FROM url_whitelist WHERE broadcaster=?'
-            whitelist: List[str]
-            whitelist = [w async for w,
-                         in await cursor.execute(query, (args.chat.channel,))]
-            for match in matches:
-                good: bool = False
-                for w in whitelist:
-                    if w in match:
-                        good = True
-                        break
-                if not good:
-                    reason: Optional[str]
-                    if modes['nourlSilent']:
-                        reason = None
-                    else:
-                        reason = 'No URLs are allowed'
-                    await timeout.timeout_user(
-                        args.data, args.chat, args.nick, 'nourl', 0,
-                        str(args.message), reason)
-                    if not args.permissions.owner:
-                        return True
-        return False
+    matches: List[str]
+    matches = re.findall(parser.twitchUrlRegex, str(args.message))
+    if matches:
+        whitelist: Set[str]
+        whitelist = await library.get_urls_whitelist(args.chat.channel,
+                                                     args.data)
+        for match in matches:
+            good: bool = False
+            for w in whitelist:
+                if w in match:
+                    good = True
+                    break
+            if not good:
+                reason: Optional[str]
+                if modes['nourlSilent']:
+                    reason = None
+                else:
+                    reason = 'No URLs are allowed'
+                await timeout.timeout_user(
+                    args.data, args.chat, args.nick, 'nourl', 0,
+                    str(args.message), reason)
+                if not args.permissions.owner:
+                    return True
+    return False
 
 
 @feature('annoyinglinks')
@@ -104,7 +101,7 @@ async def commandSetUrlMode(args: ChatCommandArgs) -> bool:
         response = parser.get_response(args.message.lower[2])
         if response == parser.Unknown:
             args.chat.send(f'''\
-        Unrecognized second parameter: {args.message[2]}''')
+Unrecognized second parameter: {args.message[2]}''')
             return True
         if response == parser.Yes:
             value = True
@@ -171,6 +168,8 @@ INSERT INTO url_whitelist (broadcaster, urlMatch) VALUES (?, ?)
                 params = args.chat.channel, args.message.lower[2]
                 await cursor.execute(query, params)
                 await db.commit()
+                await library.reset_urls_whitelist(args.chat.channel,
+                                                   args.data)
                 args.chat.send(f'''\
 {args.message.lower[2]} has been added to the URL whitelist''')
             except Exception:
@@ -186,6 +185,7 @@ DELETE FROM url_whitelist WHERE broadcaster=? AND urlMatch=?
             params = args.chat.channel, args.message.lower[2]
             await cursor.execute(query, params)
             await db.commit()
+            await library.reset_urls_whitelist(args.chat.channel, args.data)
             if cursor.rowcount == 0:
                 args.chat.send(f'''\
 {args.message.lower[2]} could not been removed from the URL whitelist, it \
