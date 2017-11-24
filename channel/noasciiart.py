@@ -15,14 +15,15 @@ defaultThreshold: float = 60.0
 @permission('bannable')
 @permission('chatModerator')
 async def filterAsciiArt(args: ChatCommandArgs) -> bool:
-    if len(args.message) < minMessageLength:
+    messageLen: int = len(str(args.message))
+    if messageLen < minMessageLength:
         return False
 
     countNoAlphaNum: int = sum(len(s) for s
                                in re.findall(r'[^\w\s]+', str(args.message)))
     threshold: float = await args.data.getChatProperty(
         args.chat.channel, 'asciiArtThreshold', defaultThreshold, float)
-    if countNoAlphaNum / len(args.message) >= threshold / 100.0:
+    if countNoAlphaNum / messageLen >= threshold / 100.0:
         reason: Optional[str]
         if await args.data.getChatProperty(
                 args.chat.channel, 'noasciiartSilent', False, int):
