@@ -1,6 +1,7 @@
-﻿import re
+﻿import asyncio
+import re
 from contextlib import suppress
-from typing import Optional  # noqa: F401
+from typing import Optional, Union  # noqa: F401
 
 from bot import utils
 from lib.data import ChatCommandArgs
@@ -23,15 +24,16 @@ async def filterAsciiArt(args: ChatCommandArgs) -> bool:
                                in re.findall(r'[^\w\s]+', str(args.message)))
     if not countNoAlphaNum:
         return False
-    threshold: float = await args.data.getChatProperty(
-        args.chat.channel, 'asciiArtThreshold', defaultThreshold, float)
+    threshold: float
+    silent: Union[int, bool]
+    threshold, silent = await asyncio.gather(
+        args.data.getChatProperty(
+            args.chat.channel, 'asciiArtThreshold', defaultThreshold, float),
+        args.data.getChatProperty(
+            args.chat.channel, 'noasciiartSilent', False, int)
+    )
     if countNoAlphaNum / messageLen >= threshold / 100.0:
-        reason: Optional[str]
-        if await args.data.getChatProperty(
-                args.chat.channel, 'noasciiartSilent', False, int):
-            reason = None
-        else:
-            reason = 'ASCII Art is banned'
+        reason: Optional[str] = 'ASCII Art is banned' if not silent else None
         await timeout.timeout_user(
             args.data, args.chat, args.nick, 'noasciiart', 0,
             str(args.message), reason)
