@@ -45,6 +45,12 @@ async def reset_urls_whitelist(broadcaster: str, data: CacheStore) -> None:
     await data.redis.delete(_redisKey(broadcaster))
 
 
+async def get_bad_urls(data: CacheStore, background: bool=False) -> List[str]:
+    return [
+        'strawpoii.me',
+    ]
+
+
 async def get_bot_urls(data: CacheStore, background: bool=False) -> List[str]:
     urls: List[str]
     key: str = 'bot-urls'

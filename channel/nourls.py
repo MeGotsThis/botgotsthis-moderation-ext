@@ -63,9 +63,7 @@ async def filterAnnoyingUrl(args: ChatCommandArgs) -> bool:
         args.chat.channel, properties, False, bool)
     if modes['nourlAllowSubscriber'] and args.permissions.subscriber:
         return False
-    badUrls: List[str] = [
-        'strawpoii.me',
-    ]
+    badUrls: List[str] = await library.get_bad_urls(args.data)
     botUrls: List[str] = await library.get_bot_urls(args.data)
     for match in matches:
         bad: bool = False
