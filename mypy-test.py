@@ -1,3 +1,5 @@
+from . import autoload  # noqa: F401
+
 from .items import channel  # noqa: F401
 from .items import whisper  # noqa: F401
 from .items import custom  # noqa: F401
