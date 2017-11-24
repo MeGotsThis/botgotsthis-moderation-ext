@@ -55,13 +55,6 @@ async def filterNoUrl(args: ChatCommandArgs) -> bool:
 @not_permission('moderator')
 @permission('chatModerator')
 async def filterAnnoyingUrl(args: ChatCommandArgs) -> bool:
-    badUrls: List[str] = [
-        'strawpoii.me',
-    ]
-    botUrls: List[str] = [
-        'imgsmate.com',
-        'imageshd.net',
-    ]
     properties: List[str] = ['nourlAllowSubscriber', 'nourlSilent']
     modes: Mapping[str, bool] = await args.data.getChatProperties(
         args.chat.channel, properties, False, bool)
@@ -69,6 +62,10 @@ async def filterAnnoyingUrl(args: ChatCommandArgs) -> bool:
         return False
     matches: List[str] = re.findall(parser.twitchUrlRegex, str(args.message))
     if matches:
+        badUrls: List[str] = [
+            'strawpoii.me',
+        ]
+        botUrls: List[str] = await library.get_bot_urls(args.data)
         for match in matches:
             bad: bool = False
             level: int = 0

@@ -1,10 +1,14 @@
 import json
-from typing import Optional, Set
+import os
+from typing import List, Optional, Set
 
+import aiofiles
 import aioodbc.cursor
 
 from lib.cache import CacheStore
 from lib.database import DatabaseMain
+
+botUrlFile: str = 'bot-urls.json'
 
 
 def _redisKey(broadcaster: str) -> str:
@@ -39,3 +43,26 @@ SELECT urlMatch FROM url_whitelist WHERE broadcaster=?
 
 async def reset_urls_whitelist(broadcaster: str, data: CacheStore) -> None:
     await data.redis.delete(_redisKey(broadcaster))
+
+
+async def get_bot_urls(data: CacheStore, background: bool=False) -> List[str]:
+    urls: List[str]
+    key: str = 'bot-urls'
+    reload: bool = False
+    val: Optional[str] = await data.redis.get(key)
+    if background and val is not None:
+        ttl: int = await data.redis.ttl(key)
+        reload = ttl < 30
+    if val is None or reload:
+        urlData: str
+        if os.path.isfile(botUrlFile):
+            async with aiofiles.open(botUrlFile, 'r',
+                                     encoding='utf-8') as file:
+                urlData = await file.read(None)
+        else:
+            urlData = '[]'
+        await data.redis.setex(key, 300, urlData)
+        urls = json.loads(urlData)
+    else:
+        urls = json.loads(val)
+    return urls
