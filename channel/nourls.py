@@ -55,40 +55,41 @@ async def filterNoUrl(args: ChatCommandArgs) -> bool:
 @not_permission('moderator')
 @permission('chatModerator')
 async def filterAnnoyingUrl(args: ChatCommandArgs) -> bool:
+    matches: List[str] = re.findall(parser.twitchUrlRegex, str(args.message))
+    if not matches:
+        return False
     properties: List[str] = ['nourlAllowSubscriber', 'nourlSilent']
     modes: Mapping[str, bool] = await args.data.getChatProperties(
         args.chat.channel, properties, False, bool)
     if modes['nourlAllowSubscriber'] and args.permissions.subscriber:
         return False
-    matches: List[str] = re.findall(parser.twitchUrlRegex, str(args.message))
-    if matches:
-        badUrls: List[str] = [
-            'strawpoii.me',
-        ]
-        botUrls: List[str] = await library.get_bot_urls(args.data)
-        for match in matches:
-            bad: bool = False
-            level: int = 0
-            badUrl: str
-            for badUrl in badUrls:
-                if badUrl in match.lower():
-                    bad = True
-                    break
-            for badUrl in botUrls:
-                if badUrl in match.lower():
-                    bad = True
-                    level = 1
-                    break
-            if bad:
-                reason: Optional[str]
-                if modes['nourlSilent']:
-                    reason = None
-                else:
-                    reason = 'No Annoying URLs are allowed'
-                await timeout.timeout_user(
-                    args.data, args.chat, args.nick, 'annoyurl', level,
-                    str(args.message), reason)
-                return True
+    badUrls: List[str] = [
+        'strawpoii.me',
+    ]
+    botUrls: List[str] = await library.get_bot_urls(args.data)
+    for match in matches:
+        bad: bool = False
+        level: int = 0
+        badUrl: str
+        for badUrl in badUrls:
+            if badUrl in match.lower():
+                bad = True
+                break
+        for badUrl in botUrls:
+            if badUrl in match.lower():
+                bad = True
+                level = 1
+                break
+        if bad:
+            reason: Optional[str]
+            if modes['nourlSilent']:
+                reason = None
+            else:
+                reason = 'No Annoying URLs are allowed'
+            await timeout.timeout_user(
+                args.data, args.chat, args.nick, 'annoyurl', level,
+                str(args.message), reason)
+            return True
     return False
 
 
