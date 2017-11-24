@@ -21,6 +21,8 @@ async def filterAsciiArt(args: ChatCommandArgs) -> bool:
 
     countNoAlphaNum: int = sum(len(s) for s
                                in re.findall(r'[^\w\s]+', str(args.message)))
+    if not countNoAlphaNum:
+        return False
     threshold: float = await args.data.getChatProperty(
         args.chat.channel, 'asciiArtThreshold', defaultThreshold, float)
     if countNoAlphaNum / messageLen >= threshold / 100.0:
