@@ -10,6 +10,11 @@ from lib.helper.chat import feature, min_args, permission
 @permission('bannable')
 @permission('chatModerator')
 async def filterEmoteSpam(args: ChatCommandArgs) -> bool:
+    hasEmotes: bool = (args.tags is not None
+                       and 'emotes' in args.tags
+                       and not args.tags['emotes'])
+    if not hasEmotes:
+        return False
     properties: List[str]
     properties = ['noemotesThreshold', 'noemotesSubscriberThreshold',
                   'noemotesSilent']
@@ -25,12 +30,10 @@ async def filterEmoteSpam(args: ChatCommandArgs) -> bool:
         threshold = thresholds['noemotesSubscriberThreshold'] or threshold
     count: int = 0
     with suppress(ValueError):
-        if (args.tags is not None and 'emotes' in args.tags
-                and args.tags['emotes']):
-            emoteList: str = cast(str, args.tags['emotes'])
-            emotes: List[List[str]]
-            emotes = [e.split(':')[1].split(',') for e in emoteList.split('/')]
-            count = sum(map(len, emotes))
+        emoteList: str = cast(str, args.tags['emotes'])
+        emotes: List[List[str]]
+        emotes = [e.split(':')[1].split(',') for e in emoteList.split('/')]
+        count = sum(map(len, emotes))
     if count > threshold:
         reason: Optional[str]
         if thresholds['noemotesSilent']:
