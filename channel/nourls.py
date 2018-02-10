@@ -62,11 +62,13 @@ async def filterAnnoyingUrl(args: ChatCommandArgs) -> bool:
     modes: Mapping[str, bool]
     badUrls: List[str]
     botUrls: List[str]
-    modes, badUrls, botUrls = await asyncio.gather(
+    botRegexUrls: List[str]
+    modes, badUrls, botUrls, botRegexUrls = await asyncio.gather(
         args.data.getChatProperties(
             args.chat.channel, properties, False, bool),
         library.get_bad_urls(args.data),
         library.get_bot_urls(args.data),
+        library.get_bot_regex_urls(args.data),
     )
     if modes['nourlAllowSubscriber'] and args.permissions.subscriber:
         return False
@@ -80,6 +82,11 @@ async def filterAnnoyingUrl(args: ChatCommandArgs) -> bool:
                 break
         for badUrl in botUrls:
             if badUrl in match.lower():
+                bad = True
+                level = 1
+                break
+        for badUrl in botRegexUrls:
+            if re.search(badUrl, match):
                 bad = True
                 level = 1
                 break
