@@ -1,6 +1,6 @@
 ﻿import asyncio
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, List, Mapping, Optional, Set, Tuple  # noqa: F401
 
 import aioodbc.cursor  # noqa: F401
@@ -225,7 +225,14 @@ async def log_url_if_no_follow(chat: 'data.Channel',
                                timestamp: datetime) -> None:
     dataCache: cache.CacheStore
     async with cache.get_cache() as dataCache:
-        if await dataCache.twitch_num_followers(nick):
+        liveTime: timedelta
+        liveTime = timestamp - await dataCache.twitch_created_date(nick)
+        numFollowers: int = await dataCache.twitch_num_followers(nick)
+        validated: bool = (
+            liveTime >= timedelta(hours=24)
+            and numFollowers > 0
+        )
+        if not validated:
             return
 
     # Record all urls with users of no follows
