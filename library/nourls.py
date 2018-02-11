@@ -86,8 +86,8 @@ async def get_bot_regex_urls(data: CacheStore, background: bool=False
         reload = ttl < 30
     if val is None or reload:
         urlData: str
-        if os.path.isfile(botUrlFile):
-            async with aiofiles.open(botUrlFile, 'r',
+        if os.path.isfile(botRegexUrlFile):
+            async with aiofiles.open(botRegexUrlFile, 'r',
                                      encoding='utf-8') as file:
                 urlData = await file.read(None)
         else:
